@@ -1,0 +1,5 @@
+# This directory is a Syncthing folder marker.
+# Do not delete.
+
+folderID: yyy35-exina
+created: 2024-12-02T12:12:52Z

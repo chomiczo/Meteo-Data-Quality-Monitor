@@ -1,0 +1,25 @@
+{
+  "data_path": "data",
+  "prefixes": [
+    "pom1m",
+    "pom30m",
+    "deszcz"
+  ],
+  "column_include": [
+    "precipitation",
+    "intensity"
+  ],
+  "rules": {
+    "rh_": {
+      "min": 0,
+      "max": 100
+    },
+    "ts_6_1_1": {
+      "min": 0,
+      "max": 11.75
+    },
+    "ta_": {
+      "min": 3
+    }
+  }
+}
