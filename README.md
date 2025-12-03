@@ -13,6 +13,8 @@ Aplikacja desktopowa stworzona z myślą o technikach, operatorach i operatorach
 
 ## Poglądowe screeny
   <img src="screenshots/Screenshot_1.png" width="600px">
+  <img src="screenshots/podpowiedzi_cofniecie.png" width="600px">
+  <img src="screenshots/anomalia.png" width="600px">
   <img src="screenshots/Screenshot_2.png" width="600px">
   <img src="screenshots/Screenshot_3.png" width="600px">
   <img src="screenshots/Screenshot_4.png" width="600px">
