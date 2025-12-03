@@ -1,35 +1,26 @@
-/**
- * assets/main.js
- *
- * Główny skrypt frontendowy aplikacji METEO-DATA-QUALITY-MONITOR
- * Odpowiada za:
- *  • Reakcję na zmiany stanu współdzielonego z Pythonem (pywebview.state)
- *  • Dynamiczną aktualizację interfejsu (lista stacji, prefiksy, kolumny, reguły itp.)
- *  • Obsługę reguł kontroli jakości (QC)
- *  • Automatyczne odświeżanie wykresu po zmianie danych
- */
-
+// Tworzy kontrolkę edycji jednej reguły filtrowania/wyświetlania serii na wykresie
 const createRuleControl = rule => {
-  // Tworzy jeden wiersz edycji reguły QC w zakładce "Reguły"
   const main = document.createElement('div')
-  main.classList.add('rule-input')
+  main.classList.add('rule-input') // kontener dla pojedyńczej reguły
 
-  // Checkbox – czy reguła jest aktywna
+  // Checkbox – czy seria ma być wyświetlana
   const enabledInput = document.createElement('input')
-  enabledInput.type = 'checkbox'
-  enabledInput.checked = !!rule.enabled
+  enabledInput.setAttribute('type', 'checkbox')
+  if (rule.enabled) {
+    enabledInput.checked = true
+  }
 
-  // Pola tekstowe dla prefiksu, min i max
+  // Pola tekstowe dla wartości reguły
   const prefixInput = document.createElement('input')
-  prefixInput.value = rule.prefix || ''
+  prefixInput.value = rule.prefix
 
   const minInput = document.createElement('input')
-  minInput.value = rule?.min ?? ''
+  minInput.value = rule?.min ?? ''   // opcjonalne minimum wartości
 
   const maxInput = document.createElement('input')
-  maxInput.value = rule?.max ?? ''
+  maxInput.value = rule?.max ?? ''   // opcjonalne maksimum wartości
 
-  // Etykiety
+  // Etykiety dla pól
   const enabledLabel = document.createElement('label')
   enabledLabel.innerText = 'Wyświetlaj'
   const prefixLabel = document.createElement('label')
@@ -39,157 +30,184 @@ const createRuleControl = rule => {
   const maxLabel = document.createElement('label')
   maxLabel.innerText = 'Max'
 
-  // Kontenery dla par label + input
+  // Kontenery grupujące etykietę z inputem (dla lepszego wyglądu)
   const prefixDiv = document.createElement('div')
-  prefixDiv.append(prefixLabel, prefixInput)
+  prefixDiv.appendChild(prefixLabel)
+  prefixDiv.appendChild(prefixInput)
 
   const enabledDiv = document.createElement('div')
-  enabledDiv.append(enabledLabel, enabledInput)
+  enabledDiv.appendChild(enabledLabel)
+  enabledDiv.appendChild(enabledInput)
 
   const minDiv = document.createElement('div')
-  minDiv.append(minLabel, minInput)
+  minDiv.appendChild(minLabel)
+  minDiv.appendChild(minInput)
 
   const maxDiv = document.createElement('div')
-  maxDiv.append(maxLabel, maxInput)
+  maxDiv.appendChild(maxLabel)
+  maxDiv.appendChild(maxInput)
 
-  // Funkcja aktualizująca obiekt reguły i przerysowująca wykres
+  // Funkcja wywoływana przy każdej zmianie w kontrolkach – aktualizuje obiekt reguły i przerysowuje wykres
   const onChange = () => {
-    rule.prefix = prefixInput.value.trim()
-    rule.min = minInput.value.trim() || undefined
-    rule.max = maxInput.value.trim() || undefined
+    rule.prefix = prefixInput.value
+    rule.min = minInput.value
+    rule.max = maxInput.value
     rule.enabled = enabledInput.checked
-    graph.render()  // natychmiastowe podświetlenie wartości poza zakresem
+    graph.render() // przerysowanie wykresu z nowymi regułami
   }
 
-  // Nasłuchiwanie zmian w polach
+  // Nasłuchiwanie zmian we wszystkich polach
   prefixInput.addEventListener('change', onChange)
   enabledInput.addEventListener('change', onChange)
   minInput.addEventListener('change', onChange)
   maxInput.addEventListener('change', onChange)
 
-  // Zwracamy gotowy element DOM
-  main.append(prefixDiv, enabledDiv, minDiv, maxDiv)
+  // Dodanie wszystkich kontenerów do głównego diva reguły
+  main.appendChild(prefixDiv)
+  main.appendChild(enabledDiv)
+  main.appendChild(minDiv)
+  main.appendChild(maxDiv)
+
   return main
 }
 
-// Główna funkcja reagująca na zmiany stanu z Pythona
+// Główny handler reagujący na zmiany stanu aplikacji przesyłane przez pywebview
 const onStateChange = e => {
   const { key } = e.detail
-  pywebview.api.log(`state change ${key}`)  // debug w konsoli Pythona
+
+  pywebview.api.log(`state change ${key}`) // log do konsoli Pythona
 
   switch (key) {
-
     // Aktualizacja listy dostępnych stacji
     case 'stations': {
       const stlist = document.getElementById('station-list')
-      stlist.innerHTML = ''  // czyścimy poprzednią listę
 
+      // Wyczyść poprzednią zawartość
+      stlist.childNodes.forEach(c => c.remove())
+
+      // Wygeneruj przyciski dla każdej stacji
       for (const station of pywebview.state.stations) {
         const btn = document.createElement('button')
+
         btn.innerText = station
-        btn.dataset.station = station
-        btn.addEventListener('click', () => {
-          pywebview.api.set_station(station)  // zmiana stacji w Pythonie
+        btn.setAttribute('data-station', station)
+        btn.addEventListener('click', e => {
+          pywebview.api.set_station(station) // ustaw wybraną stację w backendzie
         })
+
         stlist.appendChild(btn)
       }
 
-      // Automatyczny wybór pierwszej stacji po załadowaniu listy
-      if (pywebview.state.stations.length > 0) {
-        pywebview.api.set_station(pywebview.state.stations[0])
-      }
+      // Automatycznie wybierz pierwszą stację po załadowaniu listy
+      pywebview.api.set_station(pywebview.state.stations[0])
 
       document.getElementById('graph-message').innerText =
         'Wybierz stację z menu po lewej stronie'
       break
     }
 
-    // Wypełnienie selecta z prefiksami (raw_, qc_, final_ itd.)
+    // Wypełnienie selecta z dostępnymi prefiksami
     case 'prefixes': {
       const prefixSelect = document.getElementById('prefix-select')
-      prefixSelect.innerHTML = ''
+      prefixSelect.childNodes.forEach(c => c.remove())
 
       for (const prefix of pywebview.state.prefixes) {
         const opt = document.createElement('option')
-        opt.value = opt.innerText = prefix
+        opt.innerText = prefix
+        opt.value = prefix
         prefixSelect.appendChild(opt)
       }
-      break
+      break // brak break w oryginale – celowe łączenie z kolejnym case?
     }
 
-    // Podświetlenie aktywnej stacji w menu bocznym
+    // Zmiana aktualnie wybranej stacji
     case 'station': {
+      // Podświetlenie aktywnego przycisku stacji
       document.querySelectorAll('#station-list > button').forEach(el => {
-        const isActive = el.dataset.station === pywebview.state.station
-        el.classList.toggle('active', isActive)
+        const stationName = el.getAttribute('data-station')
+        if (stationName === pywebview.state.station) {
+          el.classList.add('active')
+        } else {
+          el.classList.remove('active')
+        }
       })
 
+      // Wyświetl nazwę stacji w obszarze komunikatu
       document.getElementById('graph-message').innerText = pywebview.state.station
 
-      // Po zmianie stacji – ustawiamy aktualny prefiks (z selecta)
-      const currentPrefix = document.getElementById('prefix-select').value
-      if (currentPrefix) {
-        pywebview.api.set_prefix(currentPrefix)
-      }
+      // Ustaw wybrany prefiks w backendzie (zazwyczaj po zmianie stacji)
+      pywebview.api.set_prefix(document.getElementById('prefix-select').value)
+
       break
     }
 
-    // Wypełnienie listy podpowiedzi dla kolumn (t_air, rh_0001 itd.)
+    // Lista nazw kolumn (prawdopodobnie serii danych)
     case 'colnames': {
       const colList = document.getElementById('colnames')
       colList.innerHTML = ''
 
       for (const colname of pywebview.state.colnames) {
         const opt = document.createElement('option')
-        opt.value = opt.innerText = colname
+        opt.innerText = colname
+        opt.value = colname
         colList.appendChild(opt)
       }
       break
     }
 
-    // Pokazanie najnowszego dostępnego timestampa + auto-ładowanie danych
+    // Najnowszy znacznik czasu danych – używany do informacji o aktualności
     case 'latest_ts': {
-      const dateStr = new Date(pywebview.state.latest_ts * 1000).toUTCString()
-      document.getElementById('graph-message').innerText =
-        `${pywebview.state.station} – najnowsze dane: ${dateStr}`
+      document.getElementById('graph-message').innerText = `${
+        pywebview.state.station
+      } ${new Date(pywebview.state.latest_ts * 1000).toUTCString()}`
 
-      // Jeśli to pierwsze dane – automatycznie ładujemy ostatnie 24h
+      // Automatyczne przełączenie na widok 24h przy pierwszym załadowaniu danych
       if (!graph.tspan) {
         document.getElementById('graph-24h').click()
       }
       break
     }
 
-    // Otrzymano nowe dane pomiarowe – rysujemy wykres
+    // Przyjście nowych danych do wykresu
     case 'data': {
-      graph.setData(pywebview.state.data)
+      const data = pywebview.state.data
+      graph.setData(data)
       graph.render()
 
-      // Aktualizacja pól "Od" i "Do" w zakładce Dane
-      const format = iso => iso.substring(0, 16)  // YYYY-MM-DDTHH:mm
-      document.getElementById('graph-tmin').value =
-        format(new Date(pywebview.state.data.bounds.tmin * 1000).toISOString())
-      document.getElementById('graph-tmax').value =
-        format(new Date(pywebview.state.data.bounds.tmax * 1000).toISOString())
+      // Ustawienie pól daty/czasu na granice danych
+      document.getElementById('graph-tmin').value = new Date(
+        data.bounds.tmin * 1000,
+      )
+        .toISOString()
+        .substring(0, 19)
 
-      // Generowanie legendy (kolor + nazwa kolumny)
+      document.getElementById('graph-tmax').value = new Date(
+        data.bounds.tmax * 1000,
+      )
+        .toISOString()
+        .substring(0, 19)
+
+      // Legenda – etykiety serii z kolorami
       const labels = document.getElementById('graph-labels')
       labels.innerHTML = ''
-      pywebview.state.data.desc.forEach((colname, i) => {
-        const div = document.createElement('div')
-        div.classList.add('graph-label')
-        div.style.color = graph.color(i / pywebview.state.data.desc.length)
-        div.innerText = colname
-        labels.appendChild(div)
+
+      const desc = data.desc
+      desc.forEach((colname, i) => {
+        const label = document.createElement('div')
+        label.classList.add('graph-label')
+        label.style.color = graph.color(i / desc.length)
+        label.innerText = colname
+        labels.appendChild(label)
       })
+
       break
     }
 
-    // Aktualizacja reguł QC z konfiguracji Pythona
+    // Aktualizacja reguł filtrowania/wyświetlania
     case 'rules': {
-      rules = []  // czyścimy poprzednie
+      rules = []
 
-      // Konwertujemy obiekt { "t_": { min: -50, max: 60 } } na tablicę
+      // Przekształcenie obiektu reguł na tablicę z dodanym prefiksem i domyślnie włączonymi
       for (const [prefix, r] of Object.entries(pywebview.state.rules)) {
         rules.push({ ...r, prefix, enabled: true })
       }
@@ -197,23 +215,46 @@ const onStateChange = e => {
       const rulesDiv = document.getElementById('graph-rules')
       rulesDiv.innerHTML = ''
 
+      // Wygenerowanie kontrolek dla każdej reguły
       for (const rule of rules) {
         rulesDiv.appendChild(createRuleControl(rule))
       }
+
       break
     }
 
-    // Aktualizacja paska postępu podczas ładowania danych
+    // Pasek postępu (np. podczas ładowania danych)
     case 'progress': {
-      const bar = document.querySelector('#graph-progress > div')
-      bar.style.opacity = 1
-      bar.style.width = `${pywebview.state.progress * 100}%`
+      const progressDiv = document.querySelector('#graph-progress > div')
+      progressDiv.style.opacity = 1
+      progressDiv.style.width = `${pywebview.state.progress * 100}%`
       break
     }
 
-    // Nieobsłużone zmiany stanu – debug
+    // Historia nawigacji (poprzednie/następne zakresy czasu)
+    case 'history': {
+      const { prev, next } = pywebview.state.history
+      console.log({ prev, next })
+
+      // Włącz/wyłącz przyciski przewijania w historii
+      if (prev > 0) {
+        document.getElementById('graph-prev').removeAttribute('disabled')
+      } else {
+        document.getElementById('graph-prev').setAttribute('disabled', true)
+      }
+
+      if (next > 0) {
+        document.getElementById('graph-next').removeAttribute('disabled')
+      } else {
+        document.getElementById('graph-next').setAttribute('disabled', true)
+      }
+
+      break
+    }
+
+    // Domyślny przypadek – nieobsłużone klucze
     default: {
-      console.log('Nieobsłużona zmiana stanu:', e.detail)
+      console.log('msg', e.detail)
       break
     }
   }

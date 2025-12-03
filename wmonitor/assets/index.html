@@ -1,89 +1,79 @@
 <!DOCTYPE html>
-<html lang="pl">
-<!-- Język ustawiony na polski – bardziej spójne z resztą aplikacji -->
+<html lang="en">
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- Responsywność – ważne przy zmianie rozmiaru okna aplikacji desktopowej -->
   <link rel="stylesheet" href="style.css">
   <title>Meteo Data Quality Monitor</title>
 </head>
 
 <body>
   <main>
-    <!-- Lewy pasek boczny – lista dostępnych stacji meteorologicznych -->
     <aside id="main-menu">
       <header>Dostępne stacje:</header>
-      <nav id="station-list">
-        <!-- Tu JavaScript (main.js) dynamicznie wstawi listę stacji z pywebview.state.stations -->
-      </nav>
+      <nav id="station-list"></nav>
     </aside>
 
-    <!-- Główna część aplikacji – panel z wykresem i ustawieniami -->
     <div id="panels">
       <section class="panel" id="graph">
 
         <div id="graph-content">
-          <!-- Nagłówek panelu wykresu -->
           <header id="graph-header">
-            <div id="graph-title">Wykres</div>
+            <div style="display: flex; flex-direction: row; align-items: center; gap: 16px;">
+              <nav id="graph-nav">
+                <button id="graph-prev">&larrhk;</button>
+                <button id="graph-next">&rarrhk;</button>
+              </nav>
+              <div id="graph-title">
+                Wykres
+              </div>
+            </div>
+
+
             <div id="graph-message">
               Wybierz stację z menu po lewej stronie
-              <!-- Komunikat widoczny na starcie, zanim użytkownik wybierze stację -->
             </div>
           </header>
 
-          <!-- Pasek postępu ładowania danych -->
           <div id="graph-progress">
             <div></div>
-            <!-- Wypełniany przez main.js podczas get_data() -->
           </div>
 
-          <!-- Kontener na dwa canvasy: główny (dane) + overlay (interakcja) -->
           <div id="graph-canvas-wrapper">
             <canvas class="graph-canvas" id="graph-canvas"></canvas>
-            <!-- Główny canvas – tu rysowane są dane, siatka, reguły -->
             <canvas class="graph-canvas" id="graph-canvas-overlay"></canvas>
-            <!-- Przezroczysty canvas na górze – obsługa myszy, zoom, podgląd -->
           </div>
         </div>
 
-        <!-- Dolny pasek sterowania – zakładki: Dane, Wykres, Reguły -->
         <nav id="graph-controls">
           <nav id="graph-controls-tabs">
             <button data-tab="graph-controls-data" class="active">Dane</button>
             <button data-tab="graph-controls-graph">Wykres</button>
             <button data-tab="graph-controls-rules">Reguły</button>
-            <!-- Przełączanie zakładek przez data-tab -->
           </nav>
 
-          <!-- ZAKŁADKA 1: Wybór danych do wyświetlenia -->
           <div class="graph-controls-tab" id="graph-controls-data">
             <fieldset>
               <legend>Rodzaj pomiaru</legend>
               <select id="prefix-select"></select>
-              <!-- Tu wstawiane są prefiksy: raw_, qc_, final_ itp. z pywebview.state.prefixes -->
             </fieldset>
 
             <fieldset>
               <legend>Kolumny</legend>
-              <input type="text" list="colnames" id="graph-colprefix" placeholder="np. t_">
+              <input type="text" list="colnames" id="graph-colprefix">
               <datalist id="colnames"></datalist>
-              <!-- Autouzupełnianie nazw kolumn (t_air, rh_0001, p_1013_1 itd.) -->
             </fieldset>
 
             <fieldset>
               <legend>Najnowsze dane</legend>
               <div>
-                <input type="number" id="graph-h-value" value="8" min="1" max="999">
+                <input type="number" id="graph-h-value" value="8">
                 <button id="graph-h">h</button>
-                <!-- Niestandardowa liczba godzin wstecz -->
               </div>
               <button id="graph-24h">24 godziny</button>
               <button id="graph-7d">7 dni</button>
               <button id="graph-1m">1 miesiąc</button>
-              <!-- Szybkie przyciski do popularnych zakresów -->
             </fieldset>
 
             <fieldset>
@@ -95,7 +85,6 @@
                 Do: <input type="datetime-local" id="graph-tmax">
               </div>
               <button id="graph-custom-range">Generuj</button>
-              <!-- Ręczne wpisanie zakresu daty i czasu -->
             </fieldset>
 
             <fieldset>
@@ -108,23 +97,18 @@
             </fieldset>
           </div>
 
-          <!-- ZAKŁADKA 2: Legenda serii danych -->
           <div class="graph-controls-tab" id="graph-controls-graph">
+
             <fieldset>
               <legend>Legenda</legend>
-              <div id="graph-labels">
-                <!-- Tu main.js wstawia kolorowe kwadraciki z nazwami kolumn (t_air, rh_0001 itd.) -->
-              </div>
+              <div id="graph-labels"></div>
             </fieldset>
           </div>
 
-          <!-- ZAKŁADKA 3: Reguły kontroli jakości (QC) -->
           <div class="graph-controls-tab" id="graph-controls-rules">
             <fieldset>
               <legend>Reguły</legend>
-              <div id="graph-rules">
-                <!-- Dynamicznie generowane pola do edycji reguł (prefix, min, max, enabled) -->
-              </div>
+              <div id="graph-rules"></div>
               <button id="add-rule">Dodaj</button>
             </fieldset>
           </div>
@@ -132,65 +116,55 @@
         </nav>
       </section>
     </div>
-
-    <!-- Dolny pasek stanu – aktualny czas i wartość pod kursorem -->
     <footer id="status-bar">
       <div id="graph-current-t"></div>
-      <!-- np. "2024-04-15 12:30:45" lub zakres przy zaznaczaniu -->
       <div id="graph-current-y"></div>
-      <!-- np. "23.45 °C" -->
     </footer>
   </main>
 
-  <!-- ===================================== -->
-  <!-- SKRYPTY – inicjalizacja aplikacji     -->
-  <!-- ===================================== -->
   <script>
-    // Zmienne globalne używane w graph.js i main.js
-    let frameReq = 0                    // do anulowania requestAnimationFrame (nieużywane tutaj, ale zostawione)
-    let mpos = { x: 0, y: 0 }           // pozycja myszy (używane w starszej wersji, teraz w Graph)
-    let mstart = null                   // początek zaznaczenia (teraz w Graph)
-    let rules = []                      // globalna tablica reguł QC – współdzielona z Pythonem
+    let frameReq = 0
+    let mpos = { x: 0, y: 0 }
+    let mstart = null
+    let rules = []
   </script>
-
-  <!-- Główny silnik wykresu – canvas + interakcja -->
   <script src="graph.js"></script>
-
-  <!-- Logika aplikacji – komunikacja z Pythonem, obsługa stanu, UI -->
   <script src="main.js"></script>
-
-  <!-- ===================================== -->
-  <!-- SKRYPT INICJALIZACYJNY (wbudowany)    -->
-  <!-- ===================================== -->
   <script>
-    // Przełączanie zakładek w panelu sterowania
     const setGraphControlsTab = (id) => {
       document.querySelectorAll('#graph-controls-tabs > button').forEach(el => {
-        el.classList.toggle('active', el.getAttribute('data-tab') === id)
+        if (el.getAttribute('data-tab') === id) {
+          el.classList.add('active')
+        } else {
+
+          el.classList.remove('active')
+        }
       })
 
       document.querySelectorAll('.graph-controls-tab').forEach(el => {
-        el.style.display = (el.id === id) ? 'flex' : 'none'
+        if (el.id === id) {
+          el.style.display = 'flex'
+        } else {
+          el.style.display = 'none'
+        }
       })
     }
 
-    // Obsługa kliknięcia w przyciski zakładek
     document.querySelectorAll('#graph-controls-tabs > button').forEach(el => {
-      el.addEventListener('click', () => {
+      el.addEventListener('click', e => {
         setGraphControlsTab(el.getAttribute('data-tab'))
+        el.classList.add('active')
       })
     })
 
-    // Po załadowaniu pywebview – uruchamiamy inicjalizację aplikacji
     window.addEventListener('pywebviewready', () => {
-      // Nasłuchujemy zmian stanu współdzielonego z Pythonem
       pywebview.state.addEventListener('change', onStateChange)
 
-      // Automatyczne przerysowanie wykresu przy zmianie rozmiaru okna
-      const ro = new ResizeObserver(() => graph.render())
+      const ro = new ResizeObserver((entries) => {
+        graph.render()
+      })
       ro.observe(document.getElementById('graph-canvas-wrapper'))
 
-      // Globalne skróty klawiszowe
       document.addEventListener('keydown', e => {
         switch (e.code) {
           case 'Escape':
@@ -199,53 +173,90 @@
             break
 
           case 'Digit1':
-            if (e.ctrlKey || e.metaKey) setGraphControlsTab('graph-controls-data')
+            if (e.ctrlKey || e.metaKey) {
+              setGraphControlsTab('graph-controls-data')
+            }
             break
+
           case 'Digit2':
-            if (e.ctrlKey || e.metaKey) setGraphControlsTab('graph-controls-graph')
+            if (e.ctrlKey || e.metaKey) {
+              setGraphControlsTab('graph-controls-graph')
+            }
             break
+
           case 'Digit3':
-            if (e.ctrlKey || e.metaKey) setGraphControlsTab('graph-controls-rules')
+            if (e.ctrlKey || e.metaKey) {
+              setGraphControlsTab('graph-controls-rules')
+            }
+            break
+
+          case 'KeyZ':
+            if (e.ctrlKey || e.metaKey) {
+              pywebview.api.history_back()
+            }
+            break
+
+          case 'KeyZ':
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
+              pywebview.api.history_next()
+            }
+            break
+
+          case 'KeyY':
+            if (e.ctrlKey || e.metaKey) {
+              pywebview.api.history_next()
+            }
             break
         }
       })
 
-      // Zmiana prefiksu danych (raw_, qc_, final_) → wywołujemy Pythona
+
       document.getElementById('prefix-select').addEventListener('change', e => {
         pywebview.api.set_prefix(e.target.value)
       })
 
-      // Szybkie zakresy czasu
-      document.getElementById('graph-24h').addEventListener('click', () => {
+      document.getElementById('graph-24h').addEventListener('click', e => {
         const latestTs = pywebview.state.latest_ts
-        pywebview.api.get_data(graph.colPrefix, latestTs - 60*60*24, latestTs)
+        pywebview.api.get_data(graph.colPrefix, latestTs - 60 * 60 * 24, latestTs)
       })
 
-      document.getElementById('graph-7d').addEventListener('click', () => {
+      document.getElementById('graph-7d').addEventListener('click', e => {
         const latestTs = pywebview.state.latest_ts
-        pywebview.api.get_data(graph.colPrefix, latestTs - 60*60*24*7, latestTs)
+        pywebview.api.get_data(graph.colPrefix, latestTs - 60 * 60 * 24 * 7, latestTs)
       })
 
-      document.getElementById('graph-1m').addEventListener('click', () => {
+      document.getElementById('graph-1m').addEventListener('click', e => {
         const latestTs = pywebview.state.latest_ts
-        pywebview.api.get_data(graph.colPrefix, latestTs - 60*60*24*30, latestTs)
+        pywebview.api.get_data(graph.colPrefix, latestTs - 60 * 60 * 24 * 30, latestTs)
       })
 
-      document.getElementById('graph-h').addEventListener('click', () => {
+      document.getElementById('graph-h').addEventListener('click', e => {
         const hValue = document.getElementById('graph-h-value').value
+
         const latestTs = pywebview.state.latest_ts
-        pywebview.api.get_data(graph.colPrefix, latestTs - 60*60*hValue, latestTs)
+        pywebview.api.get_data(graph.colPrefix, latestTs - 60 * 60 * hValue, latestTs)
       })
 
-      // Ręczne wpisanie zakresu daty/czasu
-      document.getElementById('graph-custom-range').addEventListener('click', () => {
-        const colPrefix = document.getElementById('graph-colprefix').value || graph.colPrefix
-        const tmin = new Date(document.getElementById('graph-tmin').value).getTime() / 1000
-        const tmax = new Date(document.getElementById('graph-tmax').value).getTime() / 1000
-        pywebview.api.get_data(colPrefix, tmin, tmax)
+      document.getElementById('graph-prev').addEventListener('click', e => {
+        pywebview.api.history_back()
+      })
+
+      document.getElementById('graph-next').addEventListener('click', e => {
+        pywebview.api.history_next()
+      })
+
+      document.getElementById('graph-custom-range').addEventListener('click', e => {
+        const colPrefix = document.getElementById('graph-colprefix').value
+
+        const tmin = new Date(document.getElementById('graph-tmin').value).getTime()
+        const tmax = new Date(document.getElementById('graph-tmax').value).getTime()
+
+        pywebview.api.get_data(colPrefix, tmin / 1000, tmax / 1000)
       })
     })
   </script>
+
+
 </body>
 
 </html>

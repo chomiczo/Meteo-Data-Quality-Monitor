@@ -1,96 +1,80 @@
-/* ===========================================================================
-   assets/graph.js
-   Główny moduł odpowiedzialny za interaktywny wykres czasowy w aplikacji
-   METEO-DATA-QUALITY-MONITOR
-   =========================================================================== */
-
-const H = 60 * 60                     // 1 godzina w sekundach
-const D = H * 24                      // 1 dzień w sekundach
-const W = D * 7                       // 1 tydzień w sekundach
+// Stałe pomocnicze do przeliczania zakresów czasu
+const H = 60 * 60
+const D = H * 24
+const W = D * 7
 
 class Graph {
   constructor(canvas, overlay) {
-    // Referencje do canvasów
-    this.canvas = canvas               // główny canvas – tu rysujemy dane i siatkę
-    this.overlay = overlay             // przezroczysty canvas na górze – do interakcji (kursor, zoom)
+    this.canvas = canvas
+    this.overlay = overlay
+    this.colPrefix = ''          // aktywny prefiks kolumny (filtr danych)
+    this.graphType = 'scatter'   // aktualny typ wykresu
 
-    this.colPrefix = ''                // aktualny filtr kolumn (np. 't_', 'rh_', 'p_')
-    this.graphType = 'scatter'         // aktualny typ wykresu: scatter / line / bar
+    this.frameReq = 0            // requestAnimationFrame do głównego rysowania
+    this.overlayFrameReq = 0     // requestAnimationFrame dla overlay (crosshair)
 
-    // Identyfikatory requestAnimationFrame – do anulowania animacji
-    this.frameReq = 0
-    this.overlayFrameReq = 0
+    this.mpos = { x: 0, y: 0 }   // aktualna pozycja myszy
+    this.mstart = null           // pozycja myszy przy rozpoczęciu zaznaczania
 
-    // Pozycja myszy i zaznaczenie do zoomu
-    this.mpos = { x: 0, y: 0 }         // aktualna pozycja kursora
-    this.mstart = null                 // punkt startu zaznaczenia (mousedown)
-
-    // Dane otrzymane z Pythona przez pywebview
     this.data = { rows: [], bounds: {}, desc: [] }
-    this.tspan = 0                     // aktualny zakres czasu (w sekundach)
+    this.tspan = 0               // zakres czasu (tmax - tmin)
 
-    // Zmiana filtra kolumn (np. temperatura, wilgotność, ciśnienie)
+    // Zmiana prefiksu kolumny
     document.getElementById('graph-colprefix').addEventListener('change', e => {
       this.colPrefix = e.target.value
     })
 
-    // Zmiana typu wykresu (scatter / line / bar)
+    // Zmiana typu wykresu
     document.getElementById('graph-type').addEventListener('change', e => {
       this.graphType = e.target.value
-      this.render()                    // przerysuj od razu po zmianie
+      this.render()
     })
 
-    // Śledzenie ruchu myszy – aktualizacja podglądu czasu i wartości
+    // Obsługa ruchu myszy — aktualizuje overlay
     this.overlay.addEventListener('mousemove', e => {
-      this.mpos = {
-        x: e.offsetX,
-        y: e.offsetY,
-      }
+      this.mpos = { x: e.offsetX, y: e.offsetY }
       this.renderOverlay()
     })
 
-    // Rozpoczęcie zaznaczania obszaru do zoomu
+    // Początek zaznaczania zakresu czasu
     this.overlay.addEventListener('mousedown', e => {
-      this.mstart = {
-        x: e.offsetX,
-        y: e.offsetY,
-      }
+      this.mstart = { x: e.offsetX, y: e.offsetY }
       this.renderOverlay()
     })
 
-    // Zakończenie zaznaczania → wykonaj zoom (pobierz dane z nowego zakresu)
+    // Zakończenie zaznaczania i pobranie danych dla zakresu
     this.overlay.addEventListener('mouseup', e => {
-      this.renderOverlay()             // odśwież overlay
+      this.renderOverlay()
 
-      if (this.tspan) {                // tylko jeśli mamy już jakieś dane
+      if (this.tspan) {
         const tstart = this.xToData(this.mstart.x)
         const tend = this.xToData(this.mpos.x)
 
-        // Wywołujemy Pythona – pobieramy dane tylko z zaznaczonego zakresu
+        // Wywołanie API pywebview po nowy zakres danych
         pywebview.api.get_data(
           this.colPrefix,
           Math.min(tstart, tend),
-          Math.max(tstart, tend),
+          Math.max(tstart, tend)
         )
 
-        this.mstart = null             // resetujemy zaznaczenie
+        this.mstart = null
       }
     })
   }
 
-  // Wymiary canvasu
+  // Rozmiary canvasu
   get w() { return this.canvas.width }
   get h() { return this.canvas.height }
 
-  // Marginesy (5% z każdej strony)
-  get tpad() { return 0.05 * this.w }   // margines poziomy
-  get ypad() { return 0.05 * this.h }   // margines pionowy
+  // Marginesy wykresu
+  get tpad() { return 0.05 * this.w }
+  get ypad() { return 0.05 * this.h }
 
-  // Skala (ile pikseli przypada na sekundę / jednostkę Y)
+  // Skala osi X i Y
   get tstep() { return (this.w - this.tpad * 2) / this.tspan }
   get ystep() { return (this.h - this.ypad * 2) / this.yspan }
 
-  // Przyjmowanie nowych danych z Pythona (po wywołaniu get_data)
+  // Ustawienie nowych danych do rysowania
   setData(data) {
     this.data = data
     this.tmin = data.bounds.tmin
@@ -101,22 +85,13 @@ class Graph {
     this.yspan = this.ymax - this.ymin
   }
 
-  // Konwersja: czas (Unix timestamp) → pozycja X na canvasie
-  dataToX(t) {
-    return (t - this.tmin) * this.tstep + this.tpad
-  }
+  // --- Konwersje danych ↔ piksele ---
+  dataToX(t) { return (t - this.tmin) * this.tstep + this.tpad }
+  dataToY(y) { return this.h - ((y - this.ymin) * this.ystep + this.ypad) }
+  xToData(x) { return (x - this.tpad) / this.tstep + this.tmin }
+  yToData(y) { return (this.h - y - this.ypad) / this.ystep + this.ymin }
 
-  // Konwersja: wartość Y → pozycja Y na canvasie (odwrócona oś Y!)
-  dataToY(y) {
-    return this.h - ((y - this.ymin) * this.ystep + this.ypad)
-  }
-
-  // Konwersja odwrotna: X → czas
-  xToData(x) {
-    return (x - this.tpad) / this.tstep + this.tmin
-  }
-
-  // Formatowanie czasu pod kursorem (np. "2024-04-15 12:30:45")
+  // Format wyświetlania daty z pozycji X
   xToDateString(x) {
     return new Date(this.xToData(x) * 1000)
       .toISOString()
@@ -124,43 +99,38 @@ class Graph {
       .replace('T', ' ')
   }
 
-  // Konwersja odwrotna: Y → wartość
-  yToData(y) {
-    return (this.h - y - this.ypad) / this.ystep + this.ymin
-  }
-
-  // Generowanie różnych kolorów dla każdej serii danych (tęczowe)
+  // Kolor dla serii danych (na podstawie indeksu)
   color(x) {
-    return `hsla(${x * 264 + 36}, 100%, 50%, 1)`
+    return `hsla(${x * 264 + 36}, 100%, 60%, 1)`
   }
 
-  // Główne rysowanie wykresu
+  // Główne renderowanie wykresu
   render() {
     cancelAnimationFrame(this.frameReq)
     this.frameReq = requestAnimationFrame(() => {
-      if (!this.tspan) {               // brak danych → nic nie rysujemy
-        return
-      }
+      if (!this.tspan) return
 
-      // Responsywność – dopasowanie canvasu do rozmiaru kontenera
+      // Dopasowanie rozmiaru canvasów do kontenera
       const { width, height } = this.canvas.parentElement.getBoundingClientRect()
       this.canvas.width = width
       this.canvas.height = height
       this.overlay.width = width
       this.overlay.height = height
 
+      /** @type {CanvasRenderingContext2D} */
       const ctx = this.canvas.getContext('2d')
 
-      // Przygotowanie siatki czasowej (godziny, dni, tygodnie)
+      // Punkty siatki czasowej (godziny, dni, tygodnie)
       const hTick = Math.floor(this.tmin / H) * H
       const dTick = Math.floor(this.tmin / D) * D
       const wTick = Math.floor(this.tmin / W) * W
 
+      // Rysowanie siatki zależnej od skali czasu
       ctx.setLineDash([])
 
-      // Linie godzinowe (widoczne tylko przy zoomie ≤ 7 dni)
+      // Siatka godzinowa przy niewielkim zakresie
       if (this.tspan <= 7 * D) {
-        ctx.strokeStyle = '#fff4'      // bardzo przezroczyste
+        ctx.strokeStyle = '#fff4'
         ctx.lineWidth = 0.75
         for (let x = hTick - H; x <= this.tmax + H; x += H) {
           ctx.beginPath()
@@ -170,7 +140,7 @@ class Graph {
         }
       }
 
-      // Linie dzienne (widoczne przy zoomie ≤ 3 tygodnie)
+      // Siatka dzienna
       if (this.tspan <= 3 * W) {
         ctx.strokeStyle = '#fff8'
         ctx.lineWidth = 1
@@ -182,7 +152,7 @@ class Graph {
         }
       }
 
-      // Linie tygodniowe – zawsze widoczne
+      // Siatka tygodniowa (zawsze)
       for (let x = wTick - W; x <= this.tmax + W; x += W) {
         ctx.strokeStyle = '#fff'
         ctx.lineWidth = 1.25
@@ -192,29 +162,22 @@ class Graph {
         ctx.stroke()
       }
 
-      // Rysowanie danych pomiarowych
+      // Rysowanie wartości (scatter, bar, line)
       let lastRow = null
-      this.data.rows.forEach((row, i) => {
+      this.data.rows.forEach(row => {
         const [t, ...ys] = row
         const x = this.dataToX(t)
 
         ys.forEach((y, j) => {
-          if (y === null) return        // pomijamy brak danych
-
-          let color = this.color(j / ys.length)  // domyślny kolor serii
+          // Domyślny kolor serii
+          let color = this.color(j / ys.length)
           const colname = this.data.desc[j]
 
-          // Podświetlanie wartości poza zakresem (reguły QC z Pythona)
+          // Reguły alarmowe (min/max)
           for (const rule of rules) {
             if (colname.startsWith(rule.prefix) && rule.enabled) {
-              try {
-                const m = parseFloat(rule.min)
-                if (y <= m) color = 'red'
-              } catch (err) {}
-              try {
-                const m = parseFloat(rule.max)
-                if (y >= m) color = 'red'
-              } catch (err) {}
+              try { if (y <= parseFloat(rule.min)) color = 'red' } catch {}
+              try { if (y >= parseFloat(rule.max)) color = 'red' } catch {}
             }
           }
 
@@ -223,11 +186,11 @@ class Graph {
           ctx.setLineDash([])
           ctx.lineWidth = 1
 
+          // Tryby rysowania
           switch (this.graphType) {
             case 'scatter':
-              const y_ = this.dataToY(y)
               ctx.beginPath()
-              ctx.arc(x, y_, 1, 0, Math.PI * 2)
+              ctx.arc(x, this.dataToY(y), 1, 0, Math.PI * 2)
               ctx.fill()
               break
 
@@ -239,22 +202,26 @@ class Graph {
               break
 
             case 'line':
-              if (lastRow && lastRow[j + 1] !== null) {
+              if (lastRow) {
                 ctx.beginPath()
-                ctx.moveTo(this.dataToX(lastRow[0]), this.dataToY(lastRow[j + 1]))
-                ctx.lineTo(this.dataToX(t), this.dataToY(y))
+                ctx.moveTo(
+                  this.dataToX(lastRow[0]),
+                  this.dataToY(lastRow[j + 1])
+                )
+                ctx.lineTo(x, this.dataToY(y))
                 ctx.stroke()
               }
               break
           }
         })
+
         lastRow = row
       })
 
-      // Rysowanie poziomych linii reguł (np. min/max temperatura)
+      // Linie progowe (min/max z rules)
       ctx.lineWidth = 1
       ctx.setLineDash([8, 8])
-      ctx.strokeStyle = '#f008'        // czerwona, półprzezroczysta
+      ctx.strokeStyle = '#f008'
 
       for (const rule of rules) {
         if (rule.enabled && rule.prefix.toLowerCase().startsWith(this.colPrefix.toLowerCase())) {
@@ -264,7 +231,7 @@ class Graph {
             ctx.moveTo(0, this.dataToY(m))
             ctx.lineTo(this.w, this.dataToY(m))
             ctx.stroke()
-          } catch (err) {}
+          } catch {}
 
           try {
             const m = parseFloat(rule.max)
@@ -272,38 +239,41 @@ class Graph {
             ctx.moveTo(0, this.dataToY(m))
             ctx.lineTo(this.w, this.dataToY(m))
             ctx.stroke()
-          } catch (err) {}
+          } catch {}
         }
       }
 
-      // Ukrycie paska postępu po zakończeniu rysowania
+      // Ukrycie paska postępu
       document.querySelector('#graph-progress > div').style.opacity = 0
     })
   }
 
-  // Rysowanie overlaya: kursor, podgląd czasu/wartości, zaznaczenie do zoomu
+  // Overlay: crosshair, tooltip, zaznaczanie zakresu
   renderOverlay() {
     cancelAnimationFrame(this.overlayFrameReq)
     this.overlayFrameReq = requestAnimationFrame(() => {
+      /** @type {CanvasRenderingContext2D} */
       const ctx = this.overlay.getContext('2d')
       ctx.clearRect(0, 0, this.w, this.h)
 
       ctx.setLineDash([4, 4])
-      ctx.lineWidth = 1
       ctx.strokeStyle = '#fff'
 
+      // Aktualizacja wyświetlanych wartości pod kursorem
       if (this.tspan) {
-        // Aktualizacja podglądu czasu pod kursorem
         if (this.mstart) {
           document.getElementById('graph-current-t').innerText =
             `${this.xToDateString(this.mstart.x)} – ${this.xToDateString(this.mpos.x)}`
         } else {
-          document.getElementById('graph-current-t').innerText = this.xToDateString(this.mpos.x)
+          document.getElementById('graph-current-t').innerText =
+            `${this.xToDateString(this.mpos.x)}`
         }
-        document.getElementById('graph-current-y').innerText = this.yToData(this.mpos.y).toFixed(4)
+
+        document.getElementById('graph-current-y').innerText =
+          `${this.yToData(this.mpos.y).toFixed(4)}`
       }
 
-      // Pionowa i pozioma linia kursora
+      // Linie kursora
       ctx.beginPath()
       ctx.moveTo(this.mpos.x, 0)
       ctx.lineTo(this.mpos.x, this.h)
@@ -314,10 +284,84 @@ class Graph {
       ctx.lineTo(this.w, this.mpos.y)
       ctx.stroke()
 
-      // Podświetlenie zaznaczonego obszaru (do zoomu)
-      if (this.mstart !== null) {
-        ctx.fillStyle = '#00000040'    // półprzezroczysty czarny
+      // Tooltipy i szukanie najbliższego punktu (tylko gdy nie zaznaczamy)
+      if (this.mstart === null) {
+        const x = this.xToData(this.mpos.x)
 
+        // Szukanie najbliższych próbek czasowych
+        const closestRows = this.data.rows.filter(
+          row => Math.abs(row[0] - x) < this.tspan / this.data.rows.length / 2
+        )
+
+        if (closestRows.length > 0) {
+          const row = closestRows[0]
+          const [t, ...ys] = row
+
+          // Najbliższa wartość na osi Y
+          const ysI = ys.map((y, i) => [y, i])
+          ysI.sort(
+            (a, b) =>
+              Math.abs(this.yToData(this.mpos.y) - a[0]) -
+              Math.abs(this.yToData(this.mpos.y) - b[0])
+          )
+          const [closestY, closestYIndex] = ysI[0]
+
+          // Pozycja punktu w pikselach
+          const xx = this.dataToX(t)
+          const yy = this.dataToY(closestY)
+
+          // Kółko podświetlające najbliższy punkt
+          ctx.strokeStyle = this.color(closestYIndex / ys.length)
+          ctx.setLineDash([])
+          ctx.lineWidth = 4
+
+          ctx.beginPath()
+          ctx.arc(xx, yy, 4, 0, Math.PI * 2)
+          ctx.stroke()
+
+          // Tooltip z wartością
+          ctx.font = '12px monospace'
+
+          let textM = ctx.measureText(
+            `${this.data.desc[closestYIndex]} = ${closestY.toFixed(4)}`
+          )
+
+          ctx.fillStyle = '#000f'
+          ctx.fillRect(
+            xx + 8,
+            this.mpos.y + 4 + 12 - textM.fontBoundingBoxAscent,
+            textM.width + 8,
+            textM.fontBoundingBoxAscent + textM.fontBoundingBoxDescent + 8
+          )
+
+          ctx.fillStyle = this.color(closestYIndex / ys.length)
+          ctx.fillText(
+            `${this.data.desc[closestYIndex]} = ${closestY.toFixed(4)}`,
+            xx + 12,
+            this.mpos.y + 8 + 12
+          )
+
+          // Tooltip z datą punktu
+          textM = ctx.measureText(`${this.xToDateString(xx)}`)
+
+          ctx.fillStyle = '#000f'
+          ctx.fillRect(
+            xx + 8,
+            this.mpos.y + 4 + 12 - textM.fontBoundingBoxAscent - 8 - 12 - 8,
+            textM.width + 8,
+            textM.fontBoundingBoxAscent + textM.fontBoundingBoxDescent + 8
+          )
+
+          ctx.fillStyle = this.color(closestYIndex / ys.length)
+          ctx.fillText(
+            `${this.xToDateString(xx)}`,
+            xx + 12,
+            this.mpos.y - 8
+          )
+        }
+      } else {
+        // Zaznaczanie zakresu czasu — przyciemnienie obszaru poza zaznaczeniem
+        ctx.fillStyle = '#00000040'
         const xmin = Math.min(this.mstart.x, this.mpos.x)
         const xmax = Math.max(this.mstart.x, this.mpos.x)
 
@@ -328,8 +372,8 @@ class Graph {
   }
 }
 
-// Inicjalizacja głównego obiektu wykresu
+// Inicjalizacja wykresu
 const graph = new Graph(
   document.getElementById('graph-canvas'),
-  document.getElementById('graph-canvas-overlay'),
+  document.getElementById('graph-canvas-overlay')
 )

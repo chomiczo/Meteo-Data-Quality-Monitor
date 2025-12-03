@@ -1,87 +1,49 @@
-"""
-wmonitor/__main__.py
+from argparse import ArgumentParser
+import logging
+import sys
+from wmonitor.app import App  # Główna klasa aplikacji
 
-Punkt wejścia do aplikacji uruchamiany poleceniem:
-    python -m wmonitor [opcje]
+from logging import getLogger, getLevelNamesMapping
 
-Dzięki temu plikowi możesz uruchomić aplikację w sposób czysty, standardowy
-i zalecany przez Pythona – bez konieczności wskazywania konkretnego pliku .py.
+from wmonitor.app.config import AppConfig  # Klasa obsługująca konfigurację aplikacji
 
-Ten plik jest automatycznie wykonywany przy `python -m wmonitor`.
-"""
-
-from argparse import ArgumentParser     # Parsowanie argumentów wiersza poleceń
-import logging                          # Konfiguracja logowania
-import sys                              # Dostęp do stdout i wyjścia z programu
-from wmonitor.app import App            # Główna klasa aplikacji
-from logging import getLogger, getLevelNamesMapping  # Logger i mapa poziomów logowania
-
-from wmonitor.app.config import AppConfig  # Wczytywanie konfiguracji z JSON-a
-
-
-# ===========================================================================
-# Konfiguracja loggera – wszystkie logi idą na konsolę (stdout)
-# ===========================================================================
+# Konfiguracja podstawowego loggera – wszystkie komunikaty idą na stdout
 logging.basicConfig(
-    stream=sys.stdout,
-    format='%(levelname)s %(filename)s:%(lineno)d -- %(message)s',
-    # Przykład: INFO app.py:127 -- Ładowanie danych z pliku raw_20240401T000000.csv
+  stream=sys.stdout,
+  format='%(levelname)s %(filename)s:%(lineno)d -- %(message)s',
 )
 
-# Dodajemy własny poziom logowania TRACE (5) – przydatny do bardzo szczegółowego debugowania
+# Dodanie własnego poziomu logowania TRACE (5) – przydatne do bardzo szczegółowego debugowania
 logging.addLevelName(5, 'TRACE')
+loglevels = getLevelNamesMapping()  # Mapa nazw poziomów → wartości numerycznych
 
-# Pobieramy mapę wszystkich dostępnych poziomów logowania (INFO=20, DEBUG=10 itd.)
-loglevels = getLevelNamesMapping()
-
-
-# ===========================================================================
 # Parsowanie argumentów wiersza poleceń
-# ===========================================================================
-parser = ArgumentParser(prog='wmonitor', description='METEO-DATA-QUALITY-MONITOR')
-
+parser = ArgumentParser('wmonitor')
 parser.add_argument(
-    '-L', '--loglevel',
-    choices=[x.lower() for x in loglevels.keys()],  # info, debug, warning, trace itd.
-    default='info',
-    help='Poziom logowania (domyślnie: info)'
+  '-L',
+  '--loglevel',
+  choices=[x.lower() for x in loglevels.keys()],  # Wszystkie dostępne poziomy (debug, info, …)
+  default='info',
+  help='Poziom logowania (domyślnie info)',
 )
-
-parser.add_argument(
-    '-c', '--config',
-    default='wmonitor.json',
-    help='Ścieżka do pliku konfiguracyjnego (domyślnie: wmonitor.json)'
-)
-
-parser.add_argument(
-    '--debug',
-    action='store_true',
-    help='Włącza tryb debug w pywebview (okno devtools w przeglądarce)'
-)
+parser.add_argument('-c', '--config', default='wmonitor.json',
+                    help='Ścieżka do pliku konfiguracyjnego (domyślnie wmonitor.json)')
+parser.add_argument('--debug', action='store_true',
+                    help='Włącza tryb debug – nadpisuje loglevel na DEBUG')
 
 args = parser.parse_args()
 
+# Ustawienie globalnego poziomu logowania
+logger = getLogger()
+logger.setLevel(loglevels.get(args.loglevel.upper(), 'INFO'))
 
-# ===========================================================================
-# Ustawienie poziomu logowania na podstawie argumentu
-# ===========================================================================
-logger = getLogger()  # Główny logger aplikacji
-logger.setLevel(loglevels.get(args.loglevel.upper(), logging.INFO))
-# Jeśli podano np. --loglevel trace → poziom 5
-# Jeśli podano coś nieznanego → domyślnie INFO
+# Jeśli podano flagę --debug, wymuszamy poziom DEBUG niezależnie od --loglevel
+if args.debug:
+    logger.setLevel(logging.DEBUG)
 
-
-# ===========================================================================
 # Wczytanie konfiguracji z pliku JSON
-# ===========================================================================
-cfg = AppConfig.load(args.config)  # Szuka pliku podanego w --config lub domyślnie wmonitor.json
+cfg = AppConfig.load(args.config)
 
-
-# ===========================================================================
-# Uruchomienie głównej aplikacji
-# ===========================================================================
-app = App(args, cfg)   # Przekazujemy argumenty i konfigurację do głównej klasy
-app.run()              # Start GUI przez pywebview + cała logika aplikacji
-
-
-# Uwaga: nie potrzebujemy if __name__ == '__main__' – ten plik jest wykonywany tylko przez python -m
+# Utworzenie instancji głównej aplikacji i uruchomienie jej
+app = App(args, cfg)
+app.run()

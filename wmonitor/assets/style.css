@@ -15,8 +15,8 @@ body {
 
 main {
   display: grid;
-  grid-template-columns: 200px 1fr;     /* lewy pasek + główna część */
-  grid-template-rows: 1fr 40px;         /* wykres + dolny pasek stanu */
+  grid-template-columns: 200px 1fr;
+  grid-template-rows: 1fr 40px;
   height: 100%;
 }
 
@@ -49,7 +49,7 @@ button:hover {
 }
 
 #station-list button.active {
-  background-color: #98971a;            /* aktywna stacja – zielony */
+  background-color: #98971a;
 }
 
 #panels {
@@ -78,10 +78,11 @@ button:hover {
 #graph-progress {
   height: 2px;
   display: flex;
+
 }
 
 #graph-progress>div {
-  background-color: #b8bb26;            /* pasek postępu */
+  background-color: #b8bb26;
   transition: opacity 1s;
 }
 
@@ -98,7 +99,7 @@ button:hover {
   position: relative;
   overflow: hidden;
   background-color: #282828;
-  cursor: none;                         /* kursor ukryty – rysowany ręcznie w overlayu */
+  cursor: none;
 }
 
 .graph-canvas {
@@ -112,7 +113,7 @@ button:hover {
 }
 
 #graph>nav {
-  background-color: #458588;            /* niebieski panel sterowania */
+  background-color: #458588;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -182,7 +183,7 @@ button:hover {
 }
 
 #graph-controls-tabs>button.active {
-  background-color: #458588;            /* aktywna zakładka */
+  background-color: #458588;
 }
 
 .graph-controls-tab {
@@ -218,7 +219,7 @@ button:hover {
 }
 
 #graph-controls-data {
-  display: flex;                        /* pierwsza zakładka widoczna domyślnie */
+  display: flex;
 }
 
 #status-bar {
@@ -229,4 +230,8 @@ button:hover {
   gap: 16px;
   align-items: center;
   padding: 16px;
+}
+
+button:disabled {
+  color: #444;
 }
