@@ -31,14 +31,17 @@ Aplikacja desktopowa stworzona z myślą o technikach, operatorach i operatorach
 - Dowolny zakres dat z wyborem godziny  
 - Pasek postępu przy ładowaniu dużych plików  
 - Pełna obsługa klawiatury
+- Podpowiedzi na wykresie
 
 ## Skróty klawiszowe
 
-| Skrót              | Działanie                              |
-|--------------------|----------------------------------------|
-| `Ctrl+1` / `Cmd+1` | Zakładka **Dane**                      |
-| `Ctrl+2` / `Cmd+2` | Zakładka **Legenda**                   |
-| `Ctrl+3` / `Cmd+3` | Zakładka **Reguły QC**                 |
+| Skrót              | Działanie                                   |
+|--------------------|---------------------------------------------|
+| `Ctrl+1` / `Cmd+1` | Zakładka **Dane**                           |
+| `Ctrl+2` / `Cmd+2` | Zakładka **Legenda**                        |
+| `Ctrl+3` / `Cmd+3` | Zakładka **Reguły QC**                      |
+| `Ctrl+Z` / `Cmd+Z` | Cofnięcie przybliżenia **UNZOOM Wykresu**   |
+| `Ctrl+Y` / `Cmd+Y` | Cofnięcie cofnięcia **Return ZOOM Wykresu** |
 
 ## Instalacja i uruchomienie
 
