@@ -1,6 +1,8 @@
 from logging import getLogger
 from typing import TYPE_CHECKING
 
+import json   # <-- ta linijka brakuje!
+
 from wmonitor.app.util import DataRequest
 
 if TYPE_CHECKING:
@@ -140,3 +142,60 @@ class AppAPI:
     except IndexError:
       # Brak pozycji do przodu → nic nie robimy
       return
+    
+  def add_rule(self, prefix: str, min_val: str = "", max_val: str = ""):
+      """Dodaje nową regułę i zapisuje konfigurację"""
+      logger.info(f"Dodawanie nowej reguły: {prefix}")
+
+      # Dodajemy do aktualnej konfiguracji
+      if prefix not in self._app.cfg.rules:
+          self._app.cfg.rules[prefix] = {}
+
+      if min_val:
+          self._app.cfg.rules[prefix]["min"] = float(min_val)
+      if max_val:
+          self._app.cfg.rules[prefix]["max"] = float(max_val)
+
+      # Zapisujemy do pliku
+      self._save_config()
+
+      # Odświeżamy frontend
+      self._app.window.state.rules = self._app.cfg.rules
+
+  def save_rules(self, rules_dict: dict):
+      """Zapisuje cały słownik reguł (używane przy edycji istniejących)"""
+      logger.info("Zapisywanie reguł z frontendu")
+      new_rules = {}
+      for prefix, vals in rules_dict.items():
+          if not prefix.strip():
+              continue
+          rule = {}
+          if 'min' in vals and vals['min'] not in [None, ""]:
+              rule['min'] = float(vals['min'])
+          if 'max' in vals and vals['max'] not in [None, ""]:
+              rule['max'] = float(vals['max'])
+          if rule:  # tylko jeśli coś jest ustawione
+              new_rules[prefix] = rule
+
+      self._app.cfg.rules = new_rules
+      self._save_config()
+      self._app.window.state.rules = self._app.cfg.rules
+
+  def _save_config(self):
+      """Zapisuje całą konfigurację do pliku wmonitor.json"""
+      try:
+          config_path = self._app.config_path
+          data = {
+              "data_path": str(self._app.cfg.data_path),
+              "prefixes": self._app.cfg.prefixes,
+              "column_include": self._app.cfg.column_include,
+              "rules": self._app.cfg.rules
+          }
+          with open(config_path, 'w', encoding='utf-8') as f:
+              json.dump(data, f, indent=2, ensure_ascii=False)
+          logger.info(f"Konfiguracja zapisana do {config_path}")
+      except Exception as e:
+          logger.error(f"Błąd podczas zapisu konfiguracji: {e}")
+          self._app.window.create_confirmation_dialog(
+              "Błąd zapisu", f"Nie udało się zapisać konfiguracji:\n{e}"
+          )    

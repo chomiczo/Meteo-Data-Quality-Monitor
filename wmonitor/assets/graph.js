@@ -36,29 +36,29 @@ class Graph {
       this.renderOverlay()
     })
 
-    // Początek zaznaczania zakresu czasu
+// Początek zaznaczania zakresu czasu
     this.overlay.addEventListener('mousedown', e => {
       this.mstart = { x: e.offsetX, y: e.offsetY }
       this.renderOverlay()
     })
 
     // Zakończenie zaznaczania i pobranie danych dla zakresu
-    this.overlay.addEventListener('mouseup', e => {
+    // ZMIANA: mouseup na document zamiast tylko overlay
+    document.addEventListener('mouseup', e => {
+      if (this.mstart === null) return
+      
       this.renderOverlay()
-
-      if (this.tspan) {
+      if (this.tspan && this.mstart) {
         const tstart = this.xToData(this.mstart.x)
         const tend = this.xToData(this.mpos.x)
-
         // Wywołanie API pywebview po nowy zakres danych
         pywebview.api.get_data(
           this.colPrefix,
           Math.min(tstart, tend),
           Math.max(tstart, tend)
         )
-
-        this.mstart = null
       }
+      this.mstart = null
     })
   }
 
@@ -161,6 +161,45 @@ class Graph {
         ctx.lineTo(this.dataToX(x), this.h)
         ctx.stroke()
       }
+      
+      // Rysowanie Osi Y (Wartości i poziome linie)
+     const numSteps = 10
+     const stepVal = this.yspan / numSteps
+     ctx.font = '11px monospace'
+     ctx.textAlign = 'right'
+     ctx.textBaseline = 'middle'
+     for (let i = 0; i <= numSteps; i++) {
+       // Oblicz wartość i pozycję Y
+       const val = this.ymin + (i * stepVal)
+       const yPix = this.dataToY(val)
+       // Pomiń rysowanie, jeśli wychodzi poza canvas (marginesy bezpieczeństwa)
+       if (yPix < 0 || yPix > this.h) continue
+       // Rysowanie delikatnej poziomej linii siatki (opcjonalne, ułatwia czytanie)
+       ctx.strokeStyle = '#fff2'
+       ctx.lineWidth = 1
+       ctx.setLineDash([])
+       ctx.beginPath()
+       ctx.moveTo(this.tpad, yPix)
+       ctx.lineTo(this.w, yPix)
+       ctx.stroke()
+       // Rysowanie kreski (tick) na osi
+       ctx.strokeStyle = '#fff'
+       ctx.lineWidth = 1
+       ctx.beginPath()
+       ctx.moveTo(this.tpad, yPix)
+       ctx.lineTo(this.tpad - 5, yPix)
+       ctx.stroke()
+       // Rysowanie tekstu z wartością
+       ctx.fillStyle = '#ccc'
+       ctx.fillText(val.toFixed(2), this.tpad - 8, yPix)
+     }
+     // Rysowanie głównej pionowej kreski osi Y
+     ctx.strokeStyle = '#fff'
+     ctx.lineWidth = 1
+     ctx.beginPath()
+     ctx.moveTo(this.tpad, 0)
+     ctx.lineTo(this.tpad, this.h)
+     ctx.stroke()
 
       // Rysowanie wartości (scatter, bar, line)
       let lastRow = null
