@@ -54,8 +54,8 @@ cd Meteo-Data-Quality-Monitor
 
 # 2. Otwórz w środowisku programistycznym (IDE) np. Visual Studio Code cały katalog z projektem.
 
-# 3. Zainstaluj bibliotekę (BARDZO WAŻNE!)
-pip install pywebview
+# 3. Zainstaluj bibliotekę (BARDZO WAŻNE!) <-- zależy jaka wersja Pythona!
+pip install pywebview / pip3 install pywebview
 
-# 5. Uruchom!
-python -m wmonitor
+# 5. Uruchom! <-- zależy jaka wersja Pythona!
+python -m wmonitor / python3 -m wmonitor
