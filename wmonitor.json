@@ -1,5 +1,5 @@
 {
-  "data_path": "C:\\Users\\User\\Desktop\\Meteo-Data-Quality-Monitor\\data",
+  "data_path": "D:\\github\\Meteo-Data-Quality-Monitor\\data",
   "prefixes": [
     "pom1m",
     "pom30m",
@@ -10,20 +10,8 @@
     "intensity"
   ],
   "rules": {
-    "rh_": {
-      "min": 0.0,
-      "max": 100.0
-    },
-    "ts_6_1_1": {
-      "min": 0.0,
-      "max": 11.75
-    },
-    "ta_": {
-      "min": 3.0
-    },
-    "ppfd_1_2_1_av": {
-      "min": 2.0,
-      "max": 3.0
+    "swin_1_2_1": {
+      "min": 0.0
     }
   }
 }

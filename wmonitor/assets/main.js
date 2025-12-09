@@ -9,52 +9,91 @@ const createRuleControl = (rule, onRemove) => {
   container.style.alignItems = 'flex-end'
   container.style.marginBottom = '10px'
 
-  container.innerHTML = `
+    container.innerHTML = `
     <div>
       <label>Prefiks</label>
       <input type="text" class="rule-prefix" value="${rule.prefix || ''}">
     </div>
+
     <div>
-      <label>Wyświetlaj</label>
-      <input type="checkbox" class="rule-enabled" ${rule.enabled !== false ? 'checked' : ''}>
+      <label>Aktywna reguła</label>
+      <input
+        type="checkbox"
+        class="rule-enabled"
+        ${rule.enabled !== false ? 'checked' : ''}
+      >
     </div>
+
+    <div>
+      <label>Na wykresie</label>
+      <input
+        type="checkbox"
+        class="rule-visible"
+        ${rule.visible === false ? '' : 'checked'}
+      >
+    </div>
+
     <div>
       <label>Min</label>
-      <input type="number" class="rule-min" step="any" value="${rule.min ?? ''}">
+      <input
+        type="number"
+        class="rule-min"
+        step="any"
+        value="${rule.min ?? ''}"
+      >
     </div>
+
     <div>
       <label>Max</label>
-      <input type="number" class="rule-max" step="any" value="${rule.max ?? ''}">
+      <input
+        type="number"
+        class="rule-max"
+        step="any"
+        value="${rule.max ?? ''}"
+      >
     </div>
+
     <div style="padding-bottom: 2px;">
-      <button class="rule-remove-btn" style="
-        background: transparent;
-        border: 1px solid #cc241d;
-        color: #cc241d;
-        cursor: pointer;
-        padding: 4px 8px;
-        font-size: 12px;">Usuń</button>
+      <button
+        class="rule-remove-btn"
+        style="
+          background: transparent;
+          border: 1px solid #cc241d;
+          color: #cc241d;
+          cursor: pointer;
+          padding: 4px 8px;
+          font-size: 12px;
+        "
+      >
+        Usuń
+      </button>
     </div>
   `
-
-  const prefixIn = container.querySelector('.rule-prefix')
+  
+    const prefixIn = container.querySelector('.rule-prefix')
   const enabledIn = container.querySelector('.rule-enabled')
+  const visibleIn = container.querySelector('.rule-visible')
   const minIn = container.querySelector('.rule-min')
   const maxIn = container.querySelector('.rule-max')
   const removeBtn = container.querySelector('.rule-remove-btn')
 
-  const update = () => {
+    const update = () => {
     rule.prefix = prefixIn.value.trim()
     rule.enabled = enabledIn.checked
+    rule.visible = visibleIn.checked   // <-- NOWE
     rule.min = minIn.value ? parseFloat(minIn.value) : undefined
     rule.max = maxIn.value ? parseFloat(maxIn.value) : undefined
+
     graph.render()
   }
 
+
   prefixIn.addEventListener('input', update)
   enabledIn.addEventListener('change', update)
+  visibleIn.addEventListener('change', update)  // <-- NOWE
   minIn.addEventListener('input', update)
   maxIn.addEventListener('input', update)
+
 
   // Obsługa kliknięcia przycisku usuwania
   removeBtn.addEventListener('click', () => {
@@ -236,7 +275,7 @@ const onStateChange = e => {
       const backendRules = pywebview.state.rules || {}
 
       Object.entries(backendRules).forEach(([prefix, r]) => {
-        const ruleObj = { prefix, enabled: true, ...r }
+        const ruleObj = { prefix, enabled: true, visible: true, ...r }
         rules.push(ruleObj)
         // Przekazujemy saveRulesToBackend jako callback 'onRemove'
         rulesDiv.appendChild(createRuleControl(ruleObj, saveRulesToBackend))

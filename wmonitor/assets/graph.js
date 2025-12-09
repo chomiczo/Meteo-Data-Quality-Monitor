@@ -207,16 +207,36 @@ class Graph {
         const [t, ...ys] = row
         const x = this.dataToX(t)
 
-        ys.forEach((y, j) => {
-          // Domyślny kolor serii
-          let color = this.color(j / ys.length)
+          ys.forEach((y, j) => {
           const colname = this.data.desc[j]
 
-          // Reguły alarmowe (min/max)
-          for (const rule of rules) {
-            if (colname.startsWith(rule.prefix) && rule.enabled) {
-              try { if (y <= parseFloat(rule.min)) color = 'red' } catch {}
-              try { if (y >= parseFloat(rule.max)) color = 'red' } catch {}
+          // NOWE: sprawdź, czy dla tej kolumny jest reguła z odznaczonym „Na wykresie”
+          let hidden = false
+          if (Array.isArray(rules)) {
+            for (const rule of rules) {
+              if (
+                colname.startsWith(rule.prefix) &&
+                rule.visible === false   // jeśli explicit false → chowamy serię
+              ) {
+                hidden = true
+                break
+              }
+            }
+          }
+          if (hidden) {
+            return // nie rysujemy tej serii
+          }
+
+          // Domyślny kolor serii
+          let color = this.color(j / ys.length)
+
+          // Reguły alarmowe (min/max) – tylko gdy reguła włączona
+          if (Array.isArray(rules)) {
+            for (const rule of rules) {
+              if (colname.startsWith(rule.prefix) && rule.enabled) {
+                try { if (y <= parseFloat(rule.min)) color = 'red' } catch {}
+                try { if (y >= parseFloat(rule.max)) color = 'red' } catch {}
+              }
             }
           }
 
@@ -336,14 +356,35 @@ class Graph {
           const row = closestRows[0]
           const [t, ...ys] = row
 
-          // Najbliższa wartość na osi Y
-          const ysI = ys.map((y, i) => [y, i])
+          
+          // Najbliższa wartość na osi Y – tylko z włączonych serii „Na wykresie”
+          let ysI = ys
+            .map((y, i) => [y, i])
+            .filter(([y, i]) => {
+              if (!Array.isArray(rules)) return true
+              const colname = this.data.desc[i]
+              for (const rule of rules) {
+                if (
+                  colname.startsWith(rule.prefix) &&
+                  rule.visible === false
+                ) {
+                  return false // ta seria jest ukryta
+                }
+              }
+              return true
+            })
+
+          if (ysI.length === 0) {
+            return // dla tego czasu wszystkie serie są ukryte
+          }
+
           ysI.sort(
             (a, b) =>
               Math.abs(this.yToData(this.mpos.y) - a[0]) -
               Math.abs(this.yToData(this.mpos.y) - b[0])
           )
           const [closestY, closestYIndex] = ysI[0]
+
 
           // Pozycja punktu w pikselach
           const xx = this.dataToX(t)
