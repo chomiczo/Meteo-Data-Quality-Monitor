@@ -26,6 +26,8 @@ class App:
     self.current: DataRequest = None
     self.future: deque[DataRequest] = deque()
 
+    self.config_path: Path = None
+
     # Słownik dostępnych stacji (nazwa → obiekt Station)
     self.stations: dict[str, Station] = {}
 

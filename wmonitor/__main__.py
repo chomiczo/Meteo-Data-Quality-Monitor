@@ -2,6 +2,7 @@ from argparse import ArgumentParser
 import logging
 import sys
 from wmonitor.app import App  # Główna klasa aplikacji
+from pathlib import Path   # <-- ta linijka brakuje!
 
 from logging import getLogger, getLevelNamesMapping
 
@@ -41,9 +42,8 @@ logger.setLevel(loglevels.get(args.loglevel.upper(), 'INFO'))
 if args.debug:
     logger.setLevel(logging.DEBUG)
 
-# Wczytanie konfiguracji z pliku JSON
 cfg = AppConfig.load(args.config)
 
-# Utworzenie instancji głównej aplikacji i uruchomienie jej
 app = App(args, cfg)
+app.config_path = Path(args.config).absolute()  
 app.run()
