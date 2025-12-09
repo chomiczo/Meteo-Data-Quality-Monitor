@@ -5,10 +5,6 @@
     "pom30m",
     "deszcz"
   ],
-  "column_include": [
-    "precipitation",
-    "intensity"
-  ],
   "rules": {
     "rh_": {
       "min": 0.0,
@@ -24,6 +20,14 @@
     "ppfd_1_2_1_av": {
       "min": 2.0,
       "max": 3.0
+    },
+    "ppfd_1_2_1": {
+      "min": 1.0,
+      "max": 900.0
     }
-  }
+  },
+  "column_include": [
+    "precipitation",
+    "intensity"
+  ]
 }
