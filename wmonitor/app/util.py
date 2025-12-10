@@ -11,7 +11,13 @@ FNAME_RX = re.compile(
 
 # Regex dopuszczający nazwy kolumn typu:
 #   temp_1m, wind_dir_10m, qc_flag etc.
+
+
+# COLNAME_RX = re.compile(r'(\w+)_(\d+)_(\d+)_(\d+)?', flags=re.I) <-- Pana Profesora regex
+
+
 COLNAME_RX = re.compile(r'(\w+)_([\d\w]+_?)+', flags=re.I)
+
 
 # Format timestampów w danych (np. "2023/04/17 12:30:00.000")
 TS_FMT = '%Y/%m/%d %H:%M:%S.%f'

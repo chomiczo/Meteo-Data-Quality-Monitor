@@ -251,19 +251,19 @@
 
           case 'KeyZ':
             if (e.ctrlKey || e.metaKey) {
-              pywebview.api.history_back()
-            }
-            break
-
-          case 'KeyZ':
-            if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
-              pywebview.api.history_next()
+              e.preventDefault() // 🆕 Zapobiega cofaniu w przeglądarce
+              if (e.shiftKey) {
+                graph.historyNext() // Ctrl+Shift+Z
+              } else {
+                graph.historyBack()  // Ctrl+Z
+              }
             }
             break
 
           case 'KeyY':
             if (e.ctrlKey || e.metaKey) {
-              pywebview.api.history_next()
+              e.preventDefault() // 🆕
+              graph.historyNext()  // Ctrl+Y
             }
             break
         }

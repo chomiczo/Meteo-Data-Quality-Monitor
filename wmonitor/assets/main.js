@@ -184,17 +184,49 @@ const onStateChange = e => {
         .substring(0, 19)
 
       // Legenda – etykiety serii z kolorami
-      const labels = document.getElementById('graph-labels')
-      labels.innerHTML = ''
+// Legenda – etykiety serii z kolorami + CHECKBOXY
+const labels = document.getElementById('graph-labels')
+labels.innerHTML = ''
 
-      const desc = data.desc
-      desc.forEach((colname, i) => {
-        const label = document.createElement('div')
-        label.classList.add('graph-label')
-        label.style.color = graph.color(i / desc.length)
-        label.innerText = colname
-        labels.appendChild(label)
-      })
+const desc = data.desc
+desc.forEach((colname, i) => {
+  const label = document.createElement('div')
+  label.classList.add('graph-label')
+  label.style.display = 'flex'
+  label.style.alignItems = 'center'
+  label.style.gap = '8px'
+  label.style.cursor = 'pointer'
+  label.style.userSelect = 'none'
+  
+  // 🆕 Checkbox
+  const checkbox = document.createElement('input')
+  checkbox.type = 'checkbox'
+  checkbox.checked = graph.columnVisibility[colname] !== false
+  checkbox.style.cursor = 'pointer'
+  
+  // 🆕 Tekst z kolorem
+  const span = document.createElement('span')
+  span.style.color = graph.color(i / desc.length)
+  span.innerText = colname
+  
+  // 🆕 Kliknięcie w checkbox LUB w tekst przełącza widoczność
+  const toggle = () => {
+    graph.columnVisibility[colname] = checkbox.checked
+    graph.render()
+  }
+  
+  checkbox.addEventListener('change', toggle)
+  label.addEventListener('click', (e) => {
+    if (e.target !== checkbox) {
+      checkbox.checked = !checkbox.checked
+      toggle()
+    }
+  })
+  
+  label.appendChild(checkbox)
+  label.appendChild(span)
+  labels.appendChild(label)
+})
 
       break
     }
