@@ -227,7 +227,7 @@ desc.forEach((colname, i) => {
   label.appendChild(span)
   labels.appendChild(label)
 })
-// --- OBSŁUGA PRZYCISKU ZAZNACZ/ODZNACZ WSZYSTKO ---
+//--- OBSŁUGA PRZYCISKU ZAZNACZ/ODZNACZ WSZYSTKO---
 const clearBtn = document.getElementById('clear-legend-btn')
 
 if (clearBtn) {
