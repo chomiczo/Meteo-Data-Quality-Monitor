@@ -1,0 +1,158 @@
+{
+  "data_path": "C:\\Users\\AresJ\\Downloads\\data",
+  "prefixes": [
+    "pom1m",
+    "pom30m",
+    "deszcz"
+  ],
+  "rules": {
+    "ta_": {
+      "min": -39.0,
+      "max": 45.0
+    },
+    "air_temperature": {
+      "min": 234.0,
+      "max": 313.0
+    },
+    "rh_": {
+      "min": 10.0,
+      "max": 105.0
+    },
+    "ts_": {
+      "min": -30.0,
+      "max": 60.0
+    },
+    "t107_": {
+      "min": -30.0,
+      "max": 60.0
+    },
+    "swin": {
+      "min": -10.0,
+      "max": 1000.0
+    },
+    "swout": {
+      "min": -10.0,
+      "max": 250.0
+    },
+    "lwin": {
+      "min": 150.0,
+      "max": 600.0
+    },
+    "lwout": {
+      "min": 150.0,
+      "max": 600.0
+    },
+    "rn_": {
+      "min": -200.0,
+      "max": 900.0
+    },
+    "ppfd": {
+      "min": -20.0,
+      "max": 3000.0
+    },
+    "ppfd_bc_in": {
+      "min": -20.0,
+      "max": 2000.0
+    },
+    "ppfdbc_in": {
+      "min": -20.0,
+      "max": 2000.0
+    },
+    "ppfdd": {
+      "min": -20.0,
+      "max": 2000.0
+    },
+    "ppfdd_": {
+      "min": -20.0,
+      "max": 2000.0
+    },
+    "ppfd_dif": {
+      "min": -20.0,
+      "max": 2000.0
+    },
+    "ppfd_out_": {
+      "min": -20.0,
+      "max": 500.0
+    },
+    "ppfdr_": {
+      "min": -20.0,
+      "max": 500.0
+    },
+    "g_": {
+      "min": -50.0,
+      "max": 200.0
+    },
+    "shf_": {
+      "min": -50.0,
+      "max": 200.0
+    },
+    "swc_": {
+      "min": 0.0,
+      "max": 50.0
+    },
+    "p_": {
+      "min": -0.0001,
+      "max": 10.0
+    },
+    "fc_": {
+      "min": -30.0,
+      "max": 20.0
+    },
+    "fc_wpl": {
+      "min": -3.0,
+      "max": 3.0
+    },
+    "co2_flux": {
+      "min": -30.0,
+      "max": 30.0
+    },
+    "co2_strg": {
+      "min": -60.0,
+      "max": 60.0
+    },
+    "co2_molar_density": {
+      "min": -10.0,
+      "max": 40.0
+    },
+    "le_wpl": {
+      "min": -50.0,
+      "max": 600.0
+    },
+    "le": {
+      "min": -50.0,
+      "max": 600.0
+    },
+    "le_strg": {
+      "min": -100.0,
+      "max": 100.0
+    },
+    "h2o_strg": {
+      "min": -60.0,
+      "max": 60.0
+    },
+    "tau": {
+      "min": -10.0,
+      "max": 10.0
+    },
+    "h": {
+      "min": -300.0,
+      "max": 650.0
+    },
+    "h_strg": {
+      "min": -100.0,
+      "max": 100.0
+    },
+    "ch4_strg": {
+      "min": -60.0,
+      "max": 60.0
+    },
+    "none_strg": {
+      "min": -60.0,
+      "max": 60.0
+    }
+  },
+  "column_include": [
+    "precipitation",
+    "intensity"
+  ]
+}

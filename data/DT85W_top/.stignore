@@ -1,0 +1,6 @@
+**(?d)(?i).DS_Store
+**(?d)(?i).owncloudsync.log
+**(?d)(?i).RData
+**(?d)(?i).db
+**(?d)(?i).log
+**(?d)(?i)._sync*

@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
+  <title>Meteo Data Quality Monitor</title>
+</head>
+
+<body>
+  <main>
+    <aside id="main-menu">
+      <header>Dostępne stacje:</header>
+      <nav id="station-list"></nav>
+    </aside>
+
+    <div id="panels">
+      <section class="panel" id="graph">
+
+        <div id="graph-content">
+          <header id="graph-header">
+            <div style="display: flex; flex-direction: row; align-items: center; gap: 16px;">
+              <nav id="graph-nav">
+                <button id="graph-prev">&larrhk;</button>
+                <button id="graph-next">&rarrhk;</button>
+              </nav>
+              <div id="graph-title">
+                Wykres
+              </div>
+            </div>
+
+
+            <div id="graph-message">
+              Wybierz stację z menu po lewej stronie
+            </div>
+          </header>
+
+          <div id="graph-progress">
+            <div></div>
+          </div>
+
+          <div id="graph-canvas-wrapper">
+            <canvas class="graph-canvas" id="graph-canvas"></canvas>
+            <canvas class="graph-canvas" id="graph-canvas-overlay"></canvas>
+          </div>
+        </div>
+
+        <nav id="graph-controls">
+          <nav id="graph-controls-tabs">
+            <button data-tab="graph-controls-data" class="active">Dane</button>
+            <button data-tab="graph-controls-graph">Wykres</button>
+            <button data-tab="graph-controls-rules">Reguły</button>
+          </nav>
+
+          <div class="graph-controls-tab" id="graph-controls-data">
+            <fieldset>
+              <legend>Rodzaj pomiaru</legend>
+              <select id="prefix-select"></select>
+            </fieldset>
+
+            <fieldset>
+              <legend>Kolumny</legend>
+              <input type="text" list="colnames" id="graph-colprefix">
+              <datalist id="colnames"></datalist>
+            </fieldset>
+
+            <fieldset>
+              <legend>Najnowsze dane</legend>
+              <div>
+                <input type="number" id="graph-h-value" value="8">
+                <button id="graph-h">h</button>
+              </div>
+              <button id="graph-24h">24 godziny</button>
+              <button id="graph-7d">7 dni</button>
+              <button id="graph-1m">1 miesiąc</button>
+            </fieldset>
+
+            <fieldset>
+              <legend>Zakres</legend>
+              <div>
+                Od: <input type="datetime-local" id="graph-tmin">
+              </div>
+              <div>
+                Do: <input type="datetime-local" id="graph-tmax">
+              </div>
+              <button id="graph-custom-range">Generuj</button>
+            </fieldset>
+
+            <fieldset>
+              <legend>Rodzaj wykresu</legend>
+              <select id="graph-type">
+                <option value="scatter">Punktowy</option>
+                <option value="line">Liniowy</option>
+                <option value="bar">Słupkowy</option>
+              </select>
+            </fieldset>
+          </div>
+
+          <div class="graph-controls-tab" id="graph-controls-graph">
+
+            <fieldset>
+              <legend>Legenda</legend>
+              <!-- Przyciski do zaznaczania/odznaczania wszystkich etykiet w legendzie -->
+              <button id="clear-legend-btn">Odznacz/Zaznacz wszystko</button>
+              <div id="graph-labels"></div>
+            </fieldset>
+          </div>
+
+<div class="graph-controls-tab" id="graph-controls-rules">
+  <fieldset>
+    <legend>Reguły</legend>
+
+    <!-- Lista istniejących reguł – będzie wypełniana przez JS -->
+    <div id="graph-rules"></div>
+
+    <!-- Formularz dodawania nowej reguły – idealnie w Twoim stylu -->
+    <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid #83a598;">
+      <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 8px; align-items: end;">
+        <div>
+          <label style="font-size:12px; color:#83a598;">Prefiks</label>
+          <input type="text" id="new-rule-prefix" placeholder="np. ta_, pfd_" style="width:100%;">
+        </div>
+        <div>
+          <label style="font-size:12px; color:#83a598;">Min</label>
+          <input type="number" id="new-rule-min" step="any" placeholder="opcjonalne" style="width:100%;">
+        </div>
+        <div>
+          <label style="font-size:12px; color:#83a598;">Max</label>
+          <input type="number" id="new-rule-max" step="any" placeholder="opcjonalne" style="width:100%;">
+        </div>
+        <div style="text-align: right; padding-top: 20px;">
+          <button id="add-rule-btn">Dodaj</button>
+        </div>
+      </div>
+      <div id="new-rule-error" style="color:#fb4934; font-size:12px; margin-top:6px; text-align:center; min-height:18px;"></div>
+    </div>
+
+  </fieldset>
+</div>
+
+
+        </nav>
+      </section>
+    </div>
+
+<!-- Modal z listą autorów -->
+<div id="authors-modal" class="modal">
+  <div class="modal-content">
+    <span class="modal-close">×</span>
+    <h2>Autorzy projektu</h2>
+    <ul class="authors-list">
+      <li>Aleksander Chomicz</li>
+      <li>Mateusz Trynka</li>
+      <li>Jakub Ciemniak</li>
+      <li>Aleksandra Szewczyk</li>
+      <li>Mateusz Kryśkiewicz</li>
+    </ul>
+    <p class="footer-note">Meteo Data Quality Monitor © 2025
+      https://github.com/chomiczo/Meteo-Data-Quality-Monitor
+    </p>
+  </div>
+</div>
+
+<footer id="status-bar">
+  <div id="graph-current-t"></div>
+
+  <!-- Przycisk „Autorzy” -->
+  <button id="authors-btn" title="Pokaż autorów projektu">
+    Autorzy
+  </button>
+
+     <div style="margin-left:auto;">
+       <select id="theme-select">
+         <option value="default">Motyw własny</option>
+         <option value="dark">Ciemny</option>
+       </select>
+     </div>
+
+
+  <div id="graph-current-y"></div>
+</footer>
+
+  </main>
+
+  <script>
+    let frameReq = 0
+    let mpos = { x: 0, y: 0 }
+    let mstart = null
+    let rules = []
+  </script>
+  <script src="graph.js"></script>
+  <script src="main.js"></script>
+  <script>
+    const setGraphControlsTab = (id) => {
+      document.querySelectorAll('#graph-controls-tabs > button').forEach(el => {
+        if (el.getAttribute('data-tab') === id) {
+          el.classList.add('active')
+        } else {
+
+          el.classList.remove('active')
+        }
+      })
+
+      document.querySelectorAll('.graph-controls-tab').forEach(el => {
+        if (el.id === id) {
+          el.style.display = 'flex'
+        } else {
+          el.style.display = 'none'
+        }
+      })
+    }
+
+    document.querySelectorAll('#graph-controls-tabs > button').forEach(el => {
+      el.addEventListener('click', e => {
+        setGraphControlsTab(el.getAttribute('data-tab'))
+        el.classList.add('active')
+      })
+    })
+
+    window.addEventListener('pywebviewready', () => {
+      pywebview.state.addEventListener('change', onStateChange)
+
+      const ro = new ResizeObserver((entries) => {
+        graph.render()
+      })
+      ro.observe(document.getElementById('graph-canvas-wrapper'))
+
+      document.addEventListener('keydown', e => {
+        switch (e.code) {
+          case 'Escape':
+            graph.mstart = null
+            graph.renderOverlay()
+            break
+
+          case 'Digit1':
+            if (e.ctrlKey || e.metaKey) {
+              setGraphControlsTab('graph-controls-data')
+            }
+            break
+
+          case 'Digit2':
+            if (e.ctrlKey || e.metaKey) {
+              setGraphControlsTab('graph-controls-graph')
+            }
+            break
+
+          case 'Digit3':
+            if (e.ctrlKey || e.metaKey) {
+              setGraphControlsTab('graph-controls-rules')
+            }
+            break
+
+          case 'KeyZ':
+            if (e.ctrlKey || e.metaKey) {
+              e.preventDefault() // 🆕 Zapobiega cofaniu w przeglądarce
+              if (e.shiftKey) {
+                graph.historyNext() // Ctrl+Shift+Z
+              } else {
+                graph.historyBack()  // Ctrl+Z
+              }
+            }
+            break
+
+          case 'KeyY':
+            if (e.ctrlKey || e.metaKey) {
+              e.preventDefault() // 🆕
+              graph.historyNext()  // Ctrl+Y
+            }
+            break
+        }
+      })
+
+
+      document.getElementById('prefix-select').addEventListener('change', e => {
+        pywebview.api.set_prefix(e.target.value)
+      })
+
+      document.getElementById('graph-24h').addEventListener('click', e => {
+        const latestTs = pywebview.state.latest_ts
+        pywebview.api.get_data(graph.colPrefix, latestTs - 60 * 60 * 24, latestTs)
+      })
+
+      document.getElementById('graph-7d').addEventListener('click', e => {
+        const latestTs = pywebview.state.latest_ts
+        pywebview.api.get_data(graph.colPrefix, latestTs - 60 * 60 * 24 * 7, latestTs)
+      })
+
+      document.getElementById('graph-1m').addEventListener('click', e => {
+        const latestTs = pywebview.state.latest_ts
+        pywebview.api.get_data(graph.colPrefix, latestTs - 60 * 60 * 24 * 30, latestTs)
+      })
+
+      document.getElementById('graph-h').addEventListener('click', e => {
+        const hValue = document.getElementById('graph-h-value').value
+
+        const latestTs = pywebview.state.latest_ts
+        pywebview.api.get_data(graph.colPrefix, latestTs - 60 * 60 * hValue, latestTs)
+      })
+
+      document.getElementById('graph-prev').addEventListener('click', e => {
+        pywebview.api.history_back()
+      })
+
+      document.getElementById('graph-next').addEventListener('click', e => {
+        pywebview.api.history_next()
+      })
+
+      document.getElementById('graph-custom-range').addEventListener('click', e => {
+        const colPrefix = document.getElementById('graph-colprefix').value
+
+        const tmin = new Date(document.getElementById('graph-tmin').value).getTime()
+        const tmax = new Date(document.getElementById('graph-tmax').value).getTime()
+
+        pywebview.api.get_data(colPrefix, tmin / 1000, tmax / 1000)
+      })
+    })
+
+
+       // Otwieranie i zamykanie modala z autorami
+  document.addEventListener('DOMContentLoaded', () => {
+    const modal = document.getElementById('authors-modal');
+    const btn = document.getElementById('authors-btn');
+    const close = document.querySelector('.modal-close');
+
+    btn.addEventListener('click', () => modal.style.display = 'flex');
+    close.addEventListener('click', () => modal.style.display = 'none');
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) modal.style.display = 'none';
+    })
+
+    // ESC zamyka modal
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && modal.style.display === 'flex') {
+        modal.style.display = 'none';
+      }
+    })
+  })
+
+
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }
+
+  // przy starcie – wczytaj motyw
+  const savedTheme = localStorage.getItem('theme') || 'default';
+  applyTheme(savedTheme);
+
+  // obsługa zmiany w select
+  document.addEventListener('DOMContentLoaded', () => {
+    const select = document.getElementById('theme-select');
+    select.value = savedTheme;
+
+    select.addEventListener('change', () => {
+      applyTheme(select.value);
+    });
+  })
+
+
+  </script>
+
+
+</body>
+
+</html>

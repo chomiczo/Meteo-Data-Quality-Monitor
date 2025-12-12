@@ -1,0 +1,410 @@
+* {
+  box-sizing: border-box;
+}
+
+#authors-btn {
+  background: #1d2021;
+  color: #fbf1c7;
+  border: 1px solid #83a598;
+  padding: 6px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+#authors-btn:hover {
+  background: #83a598;
+  color: #1d2021;
+}
+
+/* Wyśrodkowanie w status-bar */
+#status-bar {
+  grid-column: 1 / span 2;
+  background-color: #1d2021;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;  /* lewo – środek – prawo */
+  align-items: center;
+  padding: 0 20px;
+  position: relative;
+  height: 40px;
+}
+
+#status-bar > #authors-btn {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Modal */
+.modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(5px);
+  z-index: 2000;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  background: white;
+  padding: 32px;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 420px;
+  text-align: center;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+  animation: modalPop 0.3s ease-out;
+  position: relative;
+}
+
+@keyframes modalPop {
+  from { opacity: 0; transform: scale(0.85); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.modal-close {
+  position: absolute;
+  top: 12px;
+  right: 18px;
+  font-size: 32px;
+  font-weight: 300;
+  color: #999;
+  cursor: pointer;
+  width: 36px;
+  height: 36px;
+  line-height: 36px;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.modal-close:hover {
+  background: #f0f0f0;
+  color: #333;
+}
+
+.authors-list {
+  list-style: none;
+  padding: 0;
+  margin: 24px 0;
+  font-size: 18px;
+  line-height: 2.2;
+  font-weight: 500;
+  color: #2c3e50;
+}
+
+.footer-note {
+  margin-top: 24px;
+  font-size: 14px;
+  color: #777;
+  font-style: italic;
+}
+
+/* Tryb ciemny (jeśli kiedyś włączymy) */
+@media (prefers-color-scheme: dark) {
+  .modal-content { background: #1e1e1e; color: #eee; }
+  .authors-list { color: #ccc; }
+  .footer-note { color: #aaa; }
+  .modal-close:hover { background: #333; color: white; }
+}
+
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: 'Arial';
+  font-size: 14px;
+  padding: 0;
+  margin: 0;
+  width: 100vw;
+  height: 100vh;
+}
+
+main {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  grid-template-rows: 1fr 40px;
+  height: 100%;
+}
+
+main>aside {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+main>aside>nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+button {
+  background-color: var(--panel);
+  color: var(--text);
+  border: none;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: var(--success);
+}
+
+#station-list button {
+  padding: 4px;
+}
+
+#station-list button.active {
+  background-color: var(--station-active);
+}
+
+#panels {
+  background-color: var(--panel);
+}
+
+.panel {
+  display: flex;
+  height: 100%;
+  max-height: 100%;
+}
+
+#graph {
+  flex-direction: row;
+}
+
+#graph-header {
+  padding: 4px 8px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+#graph-progress {
+  height: 2px;
+  display: flex;
+
+}
+
+#graph-progress>div {
+  background-color: #b8bb26;
+  transition: opacity 1s;
+}
+
+#graph-content {
+  flex-grow: 1;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+#graph-canvas-wrapper {
+  flex-grow: 1;
+  position: relative;
+  overflow: hidden;
+  background-color: var(--panel-alt);
+  cursor: none;
+}
+
+.graph-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+#grap-canvas {
+  background-color: #282828;
+}
+
+#graph>nav {
+  background-color: var(--accent);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  width: 400px;
+  max-height: 100vh;
+  overflow-y: auto;
+}
+
+#graph>nav button {
+  font-size: 14px;
+  border-radius: 4px;
+  background-color: #1d2021d0;
+  transition: background-color 0.2s;
+}
+
+#graph>nav button:hover {
+  background-color: var(--tab-hover);
+}
+
+#graph>nav input,
+#graph>nav select {
+  padding: 4px 8px;
+  border-radius: 4px;
+  background-color: #1d202180;
+  color: #fbf1c7;
+  border: none;
+}
+
+#graph-labels {
+  display: flex;
+  flex-direction: column !important;
+}
+
+#graph-rules {
+  display: flex;
+  flex-direction: column !important;
+  gap: 8px;
+}
+
+.rule-input {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  border-bottom: 1px solid #83a598;
+}
+
+.rule-input>div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#graph-controls-tabs {
+  display: flex;
+  flex-direction: row;
+  background-color: #1d2021;
+  width: 100%;
+}
+
+#graph-controls-tabs>button {
+  border-radius: 0 !important;
+  background-color: var(--tab-bg);
+  color: var(--text);
+  flex-grow: 1;
+}
+
+#graph-controls-tabs>button.active {
+  background-color: var(--tab-active);
+}
+
+.graph-controls-tab {
+  display: none;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 8px;
+  gap: 8px;
+  width: 100%;
+}
+
+.graph-controls-tab>fieldset {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 0.5px solid #fbf1c780;
+  border-radius: 4px;
+}
+
+.graph-controls-tab>fieldset>legend {
+  width: max-content;
+  padding: 0 8px;
+  text-align: center;
+  font-size: 12px;
+}
+
+.graph-controls-tab>fieldset>div {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  align-items: center;
+}
+
+#graph-controls-data {
+  display: flex;
+}
+
+#status-bar {
+  grid-column: 1 / span 2;
+  background-color: #1d2021;
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  align-items: center;
+  padding: 16px;
+}
+
+button:disabled {
+  color: #444;
+}
+
+
+
+:root {
+  --bg: #3c3836;
+  --text: #fbf1c7;
+  --panel: #1d2021;
+  --panel-alt: #282828;
+  --accent: #458588;
+  --success: #98971a;
+  --tab-bg: #1d2021;       /* tło zakładek */
+  --tab-hover: #83a598;    /* hover */
+  --tab-active: #458588;   /* aktywna zakładka — TWÓJ kolor */
+  --station-active: #98971a;  /* TWÓJ domyślny kolor aktywnego */
+}
+ 
+/* MOTYW CIEMNY */
+[data-theme="dark"] {
+  --bg: #0f0f0f;          /* tło główne – niemal czarne */
+  --text: #e6e6e6;        /* tekst – jasna szarość */
+  --panel: #1a1a1a;       /* panel boczny/sekcje */
+  --panel-alt: #2a2a2a;   /* obszary alternatywne */
+  --accent: #3b3b3b;      /* akcent – stonowany ciemny szary */
+  --success: #595959;     /* aktywne elementy – neutralna szarość */
+ 
+    /* NOWE – zakładki dopasowane do ciemnego motywu */
+  --tab-bg: #1a1a1a;       /* ciemna szarość */
+  --tab-hover: #2f2f2f;    /* lekko jaśniejsza */
+  --tab-active: #3b3b3b;   /* akcent / aktywna */
+  --station-active: #595959;    /* neutralny szary dla aktywnego */
+}
+
+/* Styling dla selektora motywu w stopce (footer) */
+ 
+#status-bar #theme-select {
+    /* Dodana linia: Ustawia stałą szerokość elementu */
+    width: 267px;
+   
+    /* Pozostałe style z poprzedniej propozycji dla dopasowania motywu */
+    background-color: #333333;
+    color: #DDDDDD;
+    border: 1px solid #555555;
+    border-radius: 4px;
+    padding: 2px 5px;
+    font-size: 13px;
+    vertical-align: middle;
+}
+ 
+/* Stylizacja opcji w liście */
+#status-bar #theme-select option {
+    background-color: #333333;
+    color: #DDDDDD;
+}
+ 
+/* Styl dla elementu po najechaniu myszą lub w stanie 'focus' */
+#status-bar #theme-select:hover,
+#status-bar #theme-select:focus {
+    border-color: #777777;
+    outline: none;
+}
+
